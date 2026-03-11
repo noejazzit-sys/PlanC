@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Garbar Next-Gen | Resol Studio</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --garbar-coral: #FF6B6B;
+            --garbar-dark: #2D3436;
+        }
+        body { font-family: 'Montserrat', sans-serif; overflow-x: hidden; scroll-behavior: smooth; background-color: #f8f9fa; }
+
+        /* BUSCADOR */
+        .search-container { max-width: 500px; width: 100%; }
+        .search-input { border-radius: 30px !important; border: 1px solid #ddd !important; padding-left: 20px; }
+
+        /* HISTORIAS */
+        .category-stories {
+            background: #fff;
+            padding: 15px 0;
+            border-bottom: 1px solid #eee;
+            position: sticky;
+            top: 72px;
+            z-index: 1000;
+        }
+        .story-container {
+            display: flex; gap: 20px; overflow-x: auto; padding: 5px 15px; scrollbar-width: none; justify-content: center;
+        }
+        .story-container::-webkit-scrollbar { display: none; }
+        .story-item { text-align: center; min-width: 75px; cursor: pointer; }
+        .story-circle {
+            width: 65px; height: 65px; border-radius: 50%; border: 3px solid var(--garbar-coral);
+            padding: 3px; margin: 0 auto 5px; transition: 0.3s;
+        }
+        .story-circle img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
+        .story-item span { font-size: 11px; font-weight: 600; color: #444; }
+
+        /* CARRITO */
+        #cart-menu {
+            position: fixed; top: 0; right: -350px; width: 320px; height: 100%;
+            background: white; box-shadow: -5px 0 15px rgba(0,0,0,0.1);
+            z-index: 20000; transition: 0.4s; padding: 20px; display: flex; flex-direction: column;
+        }
+        #cart-menu.active { right: 0; }
+        .cart-item { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #eee; }
+
+        /* BOTÓN AR */
+        .btn-ar-nextgen {
+            background-color: var(--garbar-coral); color: white; border: none; padding: 12px 24px;
+            border-radius: 30px; font-weight: bold; box-shadow: 0 4px 15px rgba(255,107,107,0.4);
+            transition: 0.3s;
+        }
+
+        /* TARJETAS DE PRODUCTO */
+        .product-card { border: none; border-radius: 15px; transition: 0.3s; background: white; }
+        .product-card:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.05); }
+
+        /* --- ASISTENTE VIRTUAL FUNCIONAL --- */
+        #garbar-ai-assistant {
+            position: fixed; bottom: 20px; right: 20px; width: 320px; height: 480px;
+            background: white; border-radius: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+            z-index: 10000; display: flex; flex-direction: column; transition: 0.4s; transform: translateY(120%);
+        }
+        #garbar-ai-assistant.active { transform: translateY(0); }
+        .chat-header { background: var(--garbar-dark); color: white; padding: 15px; border-radius: 20px 20px 0 0; }
+        .chat-body { padding: 15px; flex-grow: 1; overflow-y: auto; background: #f9f9f9; display: flex; flex-direction: column; gap: 10px; }
+        
+        .chat-bubble { padding: 10px 15px; border-radius: 18px; font-size: 13px; max-width: 80%; line-height: 1.4; }
+        .chat-bubble.bot { background: #eee; color: #333; align-self: flex-start; border-bottom-left-radius: 2px; }
+        .chat-bubble.user { background: var(--garbar-coral); color: white; align-self: flex-end; border-bottom-right-radius: 2px; }
+        
+        .chat-trigger {
+            position: fixed; bottom: 20px; right: 20px; width: 60px; height: 60px;
+            background: var(--garbar-coral); border-radius: 50%; display: flex; align-items: center;
+            justify-content: center; font-size: 24px; color: white; cursor: pointer; z-index: 10001;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        .typing { font-style: italic; font-size: 11px; color: #999; display: none; margin-bottom: 5px; }
+
+        .logged-in-badge { background: var(--garbar-coral); color: white; padding: 2px 8px; border-radius: 20px; font-size: 12px; font-weight: bold; margin-left: 5px; }
+    </style>
+</head>
+<body>
+
+    <div class="modal fade" id="loginModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content rounded-4 border-0 shadow">
+                <div class="modal-header border-0">
+                    <h5 class="modal-title fw-bold">Entrar en Garbar</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <form id="loginForm">
+                        <input type="email" class="form-control rounded-pill mb-3" id="loginEmail" placeholder="tu@email.com" required>
+                        <input type="password" class="form-control rounded-pill mb-3" id="loginPass" placeholder="••••••••" required>
+                        <button type="submit" class="btn btn-dark w-100 rounded-pill py-2 fw-bold mt-2">ENTRAR</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <nav class="navbar navbar-light bg-white py-3 border-bottom sticky-top">
+        <div class="container d-flex justify-content-between align-items-center">
+            <a href="#" class="navbar-brand">
+                <img src="https://www.resol.es/themes/custom/resol_public/logo.svg" alt="Resol Logo" width="120">
+            </a>
+            <div class="search-container d-none d-md-block">
+                <input type="text" class="form-control search-input" placeholder="Busca sillas, mesas o inspiración...">
+            </div>
+            <div class="icons d-flex gap-3 align-items-center">
+                <span id="user-btn" style="cursor:pointer" onclick="openLogin()">👤 <span id="user-name-display"></span></span>
+                <span style="cursor: pointer;" onclick="toggleCartMenu()">🛒 <span class="badge bg-danger rounded-pill" id="cart-count">0</span></span>
+            </div>
+        </div>
+    </nav>
+
+    <div class="category-stories">
+        <div class="story-container">
+            <div class="story-item" onclick="scrollToSection('sillas-sec')">
+                <div class="story-circle"><img src="https://www.resol.es/sites/default/files/styles/menu_image/public/2020-04/HOME_mosaic_5%20%28SILLAS%29.jpg.webp"></div>
+                <span>Sillas</span>
+            </div>
+            <div class="story-item" onclick="scrollToSection('mesas-sec')">
+                <div class="story-circle"><img src="https://www.resol.es/sites/default/files/styles/menu_image/public/2020-04/HOME_mosaic_5%20%28SILLAS%29.jpg.webp"></div>
+                <span>Mesas</span>
+            </div>
+            <div class="story-item" onclick="scrollToSection('sets-sec')">
+                <div class="story-circle"><img src="https://www.resol.es/sites/default/files/styles/menu_image/public/2020-04/HOME_mosaic_3%20%28SETS%29.jpg.webp"></div>
+                <span>Sets</span>
+            </div>
+            <div class="story-item" onclick="scrollToSection('outlet-sec')">
+                <div class="story-circle d-flex align-items-center justify-content-center" style="border-color: #ffd43b;"><span style="font-size: 25px;">🔥</span></div>
+                <span>Outlet</span>
+            </div>
+        </div>
+    </div>
+
+    <section id="mesas-sec" class="position-relative text-white">
+        <div class="bg-dark" style="height: 500px; overflow: hidden; position: relative;">
+            <img src="https://www.resol.es/sites/default/files/styles/width_100/public/2025-09/Baobab%20girada%201.jpg.webp" class="w-100 h-100" style="object-fit: cover; opacity: 0.8;">
+            <div class="position-absolute top-50 start-50 translate-middle text-center w-100">
+                <h1 class="display-4 fw-bold" id="greeting">Colección BAOBAB</h1>
+                <p class="lead">Diseño orgánico para tu nuevo piso.</p>
+                <div class="mt-4">
+                    <button class="btn-ar-nextgen" onclick="alert('Iniciando Cámara AR...')">📸 VER EN MI CASA</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="sillas-sec" class="container my-5">
+        <h2 class="fw-bold mb-4">Sillas de Vanguardia</h2>
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="card product-card p-3 shadow-sm">
+                    <img src="https://www.resol.es/sites/default/files/styles/crop_width_100_/public/2021-10/Sillas1.jpg.webp" class="rounded mb-3">
+                    <h5>Silla Toledo Aire</h5>
+                    <p class="text-danger fw-bold">59,00€</p>
+                    <button class="btn btn-dark btn-sm rounded-pill" onclick="addToCart('Silla Toledo Aire', 59)">Añadir al carrito</button>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card product-card p-3 shadow-sm">
+                    <img src="https://www.resol.es/sites/default/files/styles/menu_image/public/2020-04/HOME_mosaic_5%20%28SILLAS%29.jpg.webp" class="rounded mb-3">
+                    <h5>Silla Woody</h5>
+                    <p class="text-danger fw-bold">45,00€</p>
+                    <button class="btn btn-dark btn-sm rounded-pill" onclick="addToCart('Silla Woody', 45)">Añadir al carrito</button>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card product-card p-3 shadow-sm">
+                    <img src="https://www.resol.es/sites/default/files/styles/menu_image/public/2020-04/HOME_mosaic_5%20%28SILLAS%29.jpg.webp" class="rounded mb-3">
+                    <h5>Silla Skin</h5>
+                    <p class="text-danger fw-bold">38,00€</p>
+                    <button class="btn btn-dark btn-sm rounded-pill" onclick="addToCart('Silla Skin', 38)">Añadir al carrito</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="sets-sec" class="container my-5">
+        <h2 class="fw-bold mb-4">Sets de Terraza</h2>
+        <div class="row g-4">
+            <div class="col-md-6">
+                <div class="card product-card p-4 d-flex flex-row align-items-center gap-3 shadow-sm">
+                    <img src="https://www.resol.es/sites/default/files/styles/menu_image/public/2020-04/HOME_mosaic_3%20%28SETS%29.jpg.webp" width="150" class="rounded">
+                    <div>
+                        <h5>Set Compact Balcón</h5>
+                        <p class="small text-muted">Mesa + 2 sillas plegables.</p>
+                        <p class="text-danger fw-bold">145,00€</p>
+                        <button class="btn btn-dark btn-sm" onclick="addToCart('Set Compact', 145)">Añadir</button>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card product-card p-4 d-flex flex-row align-items-center gap-3 shadow-sm">
+                    <img src="https://www.resol.es/sites/default/files/styles/menu_image/public/2020-04/HOME_mosaic_3%20%28SETS%29.jpg.webp" width="150" class="rounded">
+                    <div>
+                        <h5>Set Lounge Garden</h5>
+                        <p class="small text-muted">Sofá 2 plazas + Mesa baja.</p>
+                        <p class="text-danger fw-bold">320,00€</p>
+                        <button class="btn btn-dark btn-sm" onclick="addToCart('Set Lounge', 320)">Añadir</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="outlet-sec" class="container my-5">
+        <h2 class="fw-bold mb-4 text-warning">Outlet: Últimas Unidades 🔥</h2>
+        <div class="row g-3">
+            <div class="col-6 col-md-3">
+                <div class="card product-card p-3 border-0 shadow-sm text-center">
+                    <div class="badge bg-danger position-absolute top-0 start-0 m-2">-40%</div>
+                    <img src="https://www.resol.es/sites/default/files/styles/menu_image/public/2020-04/HOME_mosaic_5%20%28SILLAS%29.jpg.webp" class="rounded mb-2" style="height: 120px; object-fit: cover;">
+                    <p class="fw-bold m-0 small">Silla Skin Outlet</p>
+                    <p class="text-danger fw-bold m-0">29,00€</p>
+                    <button class="btn btn-dark btn-sm mt-2" onclick="addToCart('Silla Skin Outlet', 29)">Comprar</button>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="card product-card p-3 border-0 shadow-sm text-center">
+                    <div class="badge bg-danger position-absolute top-0 start-0 m-2">-30%</div>
+                    <img src="https://www.resol.es/sites/default/files/styles/menu_image/public/2020-04/HOME_mosaic_5%20%28SILLAS%29.jpg.webp" class="rounded mb-2" style="height: 120px; object-fit: cover;">
+                    <p class="fw-bold m-0 small">Silla Garden Red</p>
+                    <p class="text-danger fw-bold m-0">31,00€</p>
+                    <button class="btn btn-dark btn-sm mt-2" onclick="addToCart('Silla Garden Red', 31)">Comprar</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div id="cart-menu">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h5 class="fw-bold m-0">Mi Carrito</h5>
+            <button class="btn-close" onclick="toggleCartMenu()"></button>
+        </div>
+        <div id="cart-item-list" class="flex-grow-1 overflow-auto">
+            <p class="text-muted small text-center">No hay productos aún.</p>
+        </div>
+        <div class="border-top pt-3">
+            <div class="d-flex justify-content-between fw-bold mb-3">
+                <span>Total:</span>
+                <span id="cart-total">0.00€</span>
+            </div>
+            <button class="btn btn-dark w-100 py-2 fw-bold">FINALIZAR COMPRA</button>
+        </div>
+    </div>
+
+    <div class="chat-trigger" onclick="document.getElementById('garbar-ai-assistant').classList.toggle('active')">💬</div>
+    <div id="garbar-ai-assistant">
+        <div class="chat-header d-flex justify-content-between align-items-center">
+            <span class="fw-bold small">🤖 Garbar AI Assistant</span>
+            <span style="cursor:pointer" onclick="document.getElementById('garbar-ai-assistant').classList.remove('active')">✕</span>
+        </div>
+        <div class="chat-body" id="chatBody">
+            <div class="chat-bubble bot">¡Hola! Soy la IA de Garbar. Pregúntame sobre <b>precios</b>, <b>envíos</b> o <b>sillas</b>.</div>
+        </div>
+        <div id="typingIndicator" class="px-3 typing">La IA está escribiendo...</div>
+        <div class="p-2 border-top">
+            <form id="chatForm" class="d-flex gap-2">
+                <input type="text" id="chatInput" class="form-control form-control-sm rounded-pill" placeholder="Escribe algo..." autocomplete="off">
+                <button type="submit" class="btn btn-sm btn-dark rounded-circle">></button>
+            </form>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // LOGIN
+        let userIsLoggedIn = false;
+        const loginModal = new bootstrap.Modal(document.getElementById('loginModal'));
+        function openLogin() {
+            if (!userIsLoggedIn) loginModal.show();
+            else if(confirm("¿Cerrar sesión?")) {
+                userIsLoggedIn = false;
+                document.getElementById('user-name-display').innerHTML = "";
+            }
+        }
+        document.getElementById('loginForm').onsubmit = (e) => {
+            e.preventDefault();
+            userIsLoggedIn = true;
+            const name = document.getElementById('loginEmail').value.split('@')[0];
+            document.getElementById('user-name-display').innerHTML = `<span class="logged-in-badge">Hola, ${name}</span>`;
+            loginModal.hide();
+        };
+
+        // SCROLL
+        function scrollToSection(id) {
+            const el = document.getElementById(id);
+            window.scrollTo({ top: el.offsetTop - 150, behavior: 'smooth' });
+        }
+
+        // CARRITO
+        let cartItems = [];
+        let totalAmount = 0;
+        function toggleCartMenu() { document.getElementById('cart-menu').classList.toggle('active'); }
+        function addToCart(name, price) {
+            cartItems.push({ name, price });
+            totalAmount += price;
+            updateCartUI();
+            if(!document.getElementById('cart-menu').classList.contains('active')) toggleCartMenu();
+        }
+        function updateCartUI() {
+            document.getElementById('cart-count').innerText = cartItems.length;
+            document.getElementById('cart-total').innerText = totalAmount.toFixed(2) + "€";
+            const cartList = document.getElementById('cart-item-list');
+            cartList.innerHTML = cartItems.length === 0 ? '<p class="text-center">Vacío</p>' : 
+                cartItems.map(item => `<div class="cart-item"><span>${item.name}</span><b>${item.price}€</b></div>`).join('');
+        }
+
+        // --- LÓGICA DEL CHAT FUNCIONAL ---
+        const chatForm = document.getElementById('chatForm');
+        const chatInput = document.getElementById('chatInput');
+        const chatBody = document.getElementById('chatBody');
+        const typingIndicator = document.getElementById('typingIndicator');
+
+        chatForm.onsubmit = (e) => {
+            e.preventDefault();
+            const message = chatInput.value.trim().toLowerCase();
+            if(!message) return;
+
+            // Añadir mensaje del usuario
+            appendMessage(chatInput.value, 'user');
+            chatInput.value = '';
+
+            // Simular "IA pensando"
+            typingIndicator.style.display = 'block';
+            
+            setTimeout(() => {
+                typingIndicator.style.display = 'none';
+                let response = "No estoy segura de eso, pero puedes ver nuestro catálogo de sillas y mesas arriba.";
+
+                if(message.includes("silla")) response = "Tenemos sillas icónicas como la **Toledo Aire** (59€) o la **Woody** (45€). ¿Quieres que te lleve a esa sección?";
+                if(message.includes("envio") || message.includes("envió")) response = "El envío es gratuito en pedidos superiores a 300€. Suele tardar entre 3 y 5 días hábiles.";
+                if(message.includes("precio")) response = "Nuestros precios van desde los 29€ en el Outlet hasta los 320€ en sets completos.";
+                if(message.includes("hola")) response = "¡Hola! ¿En qué puedo ayudarte hoy con tu decoración?";
+                if(message.includes("mesa")) response = "Nuestra pieza estrella es la **Mesa Baobab** (129€). ¡Queda genial en cualquier terraza!";
+
+                appendMessage(response, 'bot');
+            }, 1000);
+        };
+
+        function appendMessage(text, side) {
+            const bubble = document.createElement('div');
+            bubble.className = `chat-bubble ${side}`;
+            bubble.innerHTML = text;
+            chatBody.appendChild(bubble);
+            chatBody.scrollTop = chatBody.scrollHeight;
+        }
+
+        // Saludo dinámico Hero
+        const hours = new Date().getHours();
+        const greeting = document.getElementById('greeting');
+        if (greeting) {
+            if (hours < 12) greeting.innerText = "¡Buenos días! Estrena salón";
+            else if (hours > 20) greeting.innerText = "¡Buenas noches! Tu descanso";
+        }
+    </script>
+</body>
+</html>
